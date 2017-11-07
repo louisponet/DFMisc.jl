@@ -1,25 +1,39 @@
-using DFTools
+using DFWannier
 using Optim
 
+function change_lsoc(model,indices,lambda)
+  for wfc in model.wfcs[indices[1] : indices[2]]
+    wfc.atom = PhysAtom(wfc.atom.center,lambda)
+  end
+end
+
 function optimize_l()
-  x = create_TB_model("/home/ponet/GeTe_2/nonrel/","/home/ponet/GeTe_2/rel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.018) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.2995182189) for i=1:4]...],Float64);
-  # x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.018) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.2995182189) for i=1:4]...],Float64);
-  dfbands = read_bands_file("/home/ponet/GeTe_2/rel/GeTe_bands.out",Float64)[21:30]
-  lambda1_s = -0.018
-  lambda2_s = 0.297346
+  T = Float64
+  
+  cell_param = 4.3392*T[ 0.8424444 -0.4863855 -3.7e-8;-1.5e-8 0.972771 6.0e-9;-5.7e-8 6.0e-9 1.5226926]
+  atom_pos   = [cell_param*[1/3 ,2/3, 0.3194],cell_param*[2/3,1/3,0.7363],cell_param*[0.0,0.0,0.0]]
+  atoms = [[PhysAtom(Point3D(atom_pos[1]),0.0) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),-0.8) for i=1:4];[PhysAtom(Point3D(atom_pos[3]),-1.0) for i=1:4]]
+  x = WannierModel{T}("/home/ponet/Documents/PhD/BiTeI/NSOC/","/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",atoms);
+  
+  dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/SOC/2BiTeI_bands.out",T)[21:44]
+    
+  lambda1_s = -0.462138
+  lambda2_s = 0.355636
+  lambda3_s = -0.768408
   function f(lambdas)
-    changeLambdaSOC!(x,[1,4],lambdas[1])
-    changeLambdaSOC!(x,[5,8],lambdas[2])
-    tbbands,tmp = calculate_eig_SOC(x)
+    change_lsoc(x,[1,4],lambdas[1])
+    change_lsoc(x,[5,8],lambdas[2])
+    change_lsoc(x,[9,12],lambdas[3])
+    tbbands = calculate_eig_soc_bloch(x)
     out_diff = 0.0
-    for i=1:10
-      for (calc,exact) in zip(tbbands[i].eigvals,dfbands[i].eigvals)
+    for i=1:length(tbbands)
+      for (calc,exact) in zip(tbbands[i].eigvals[80:120],dfbands[i].eigvals[80:120])
         out_diff += abs(calc-exact)
       end
     end
     return out_diff
   end
-  return optimize(f,[lambda1_s,lambda2_s],show_trace = true,show_every = 1,extended_trace=true,time_limit=3600)
+  return optimize(f,[lambda1_s,lambda2_s,lambda3_s],show_trace = true,show_every = 1,extended_trace=true)
 end
 results = optimize_l()
 println(results)

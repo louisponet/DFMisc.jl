@@ -1,38 +1,34 @@
-using Plots
-using DFControl
 using LaTeXStrings
-include("src/DFTypes.jl")
-include("src/DFFileprc.jl")
-include("src/DFSupCalc.jl")
-include("src/DFTbCalc.jl")
-include("src/DFHamiCalc.jl")
-include("src/DFUtils.jl")
-include("src/DFPlotter.jl")
 
+using Plots
 using DFWannier
+
 T=Float64
 cell_param = 4.3392*T[ 0.8424444 -0.4863855 -3.7e-8;-1.5e-8 0.972771 6.0e-9;-5.7e-8 6.0e-9 1.5226926]
 atom_pos   = [cell_param*[1/3 ,2/3, 0.3194],cell_param*[2/3,1/3,0.7363],cell_param*[0.0,0.0,0.0]]
-atoms = [[PhysAtom(Point3D(atom_pos[1]),0.0) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),-0.8) for i=1:4];[PhysAtom(Point3D(atom_pos[3]),-1.0) for i=1:4]]
+# atoms = [[PhysAtom(Point3D(atom_pos[1]),0.210752) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),0.296619) for i=1:4];[PhysAtom(Point3D(atom_pos[3]), -0.770879) for i=1:4]]
+atoms = [[PhysAtom(Point3D(atom_pos[1]),-0.0462138) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),0.355636) for i=1:4];[PhysAtom(Point3D(atom_pos[3]), -0.768408) for i=1:4]]
 # x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/BiTeI/NSOC/","/Users/ponet/Documents/Fysica/PhD/BiTeI/NSOC/2BiTeI_bands.out",[[PhysAtom(Point3D(atom_pos[1]),1.0) for i=1:3];[PhysAtom(Point3D(atom_pos[2]),0.0) for i=1:3];[PhysAtom(Point3D(atom_pos[3]),0.8) for i=1:3]],Float64);
 x = WannierModel{T}("/home/ponet/Documents/PhD/BiTeI/NSOC/","/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",atoms);
 
-atoms = [[PhysAtom(Point3D(atom_pos[1]),.3) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),-0.1) for i=1:4];[PhysAtom(Point3D(atom_pos[3]),.8) for i=1:4]]
-for (i,atom) in enumerate(atoms)
-  x.wfcs[i].atom = atom
-end
-tbbands_soc_tot = calculate_eig_soc(x);
+
+tbbands_soc_tot = calculate_eig_soc_bloch(x)
+df_bands_soc = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/SOC/2BiTeI_bands.out",T)
 plot(df_bands_soc,tbbands_soc_tot,ylim=[5,12])
 
+for (i,wfc) in enumerate(x.wfcs)
+  wfc.atom = atoms[i]
+end
+
 tbbands_tot = calculate_eig_cm(x);
-df_bands = read_bands_file("/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",T)
-df_bands_soc = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/SOC/2BiTeI_bands.out",T)
+df_bands = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",T)
 tbbands    = calculate_eig_cm_angmom(x,90:0.2:110);
-tbbandssoc = calculate_eig_cm_angmom_SOC(x,90:0.2:110);
+tbbandssoc = calculate_eig_cm_angmom_soc(x);
+tbbandssoc = calculate_eig_cm_angmom_soc(x,90:0.2:110);
 
 plot(tbbandssoc)
-
-#----------all the plots------------#
+plot(df_bands_soc[21:44])
+#----------all the plots--------
 plot(plot([tbbandssoc[9:10]...,tbbands[5]],:cm_z,label=["SOC" "SOC" "No SOC"],leg=false,xticks=([-0.05,0.0,0.05],["","",""]),yticks=collect(2.5:0.2:4)),plot([tbbandssoc[9:10]...,tbbands[5]],:eigvals,fermi=9.2879,label=["SOC" "SOC" "No SOC"],xticks=([-0.05,0.0,0.05],["","",""]),yguide=L"E-E_f"*" (eV)"), plot([tbbandssoc[9:10]...,tbbands[5]],:angmom1_x,label = ["SOC" "SOC" "No SOC"],leg=false,title="OAM around Te",xticks=([-0.05,0.0,0.05],["","",""]),yticks=collect(-1:0.2:0.2)),plot([tbbandssoc[9:10]...,tbbands[5]],:spin1_x,fermi=9.2879,leg=false,title="SAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:angmom1_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),xguide=L"|$\mathbf{k}_r$|",title="",yticks=collect(-0.2:0.2:0.6)),plot([tbbandssoc[9:10]...,tbbands[5]],:spin1_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),title="",xguide=L"|$\mathbf{k}_r$|"),size=(1200,1200),guidefont=font(20,"DejaVu Sans"),titlefont=font(20,"DejaVu Sans"),layout=(3,2))
 plot(plot([tbbandssoc[5:6]...,tbbands[3]],:cm_z,label=["SOC" "SOC" "No SOC"],leg=false,xticks=([-0.05,0.0,0.05],["","",""]),yticks=collect(3.4:0.2:5)),plot([tbbandssoc[5:6]...,tbbands[3]],:eigvals,fermi=9.2879,label=["SOC" "SOC" "No SOC"],xticks=([-0.05,0.0,0.05],["","",""]),yguide=L"E-E_f"*" (eV)",yticks=collect(-3:0.2:-1)), plot([tbbandssoc[5:6]...,tbbands[3]],:angmom2_x,leg=false,label = ["SOC" "SOC" "No SOC"],title="OAM around Te",xticks=([-0.05,0.0,0.05],["","",""]),yticks=collect(-0.5:0.2:1)),plot([tbbandssoc[5:6]...,tbbands[3]],:spin2_x,fermi=9.2879,leg=false,title="SAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[5:6]...,tbbands[3]],:angmom2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),xguide=L"|$\mathbf{k}_r$|",title=""),plot([tbbandssoc[5:6]...,tbbands[3]],:spin2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),title="",xguide=L"|$\mathbf{k}_r$|"),size=(1200,1200),guidefont=font(20,"DejaVu Sans"),titlefont=font(20,"DejaVu Sans"),layout=(3,2))
 plot(plot([tbbandssoc[7:8]...,tbbands[4]],:cm_z,label=["SOC" "SOC" "No SOC"],leg=false,xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[7:8]...,tbbands[4]],:eigvals,fermi=9.2879,label=["SOC" "SOC" "No SOC"],xticks=([-0.05,0.0,0.05],["","",""]),yguide=L"E-E_f"*" (eV)"), plot([tbbandssoc[7:8]...,tbbands[4]],:angmom2_x,leg=false,label = ["SOC" "SOC" "No SOC"],title="OAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[7:8]...,tbbands[4]],:spin2_x,fermi=9.2879,leg=false,title="SAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[7:8]...,tbbands[4]],:angmom2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),xguide=L"|$\mathbf{k}_r$|",title=""),plot([tbbandssoc[7:8]...,tbbands[4]],:spin2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),title="",xguide=L"|$\mathbf{k}_r$|"),size=(1200,1200),guidefont=font(20,"DejaVu Sans"),titlefont=font(20,"DejaVu Sans"),layout=(3,2))
