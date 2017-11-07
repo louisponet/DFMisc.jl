@@ -1,39 +1,23 @@
 using Plots
 using LaTeXStrings
-include("src/DFTypes.jl")
-include("src/DFFileprc.jl")
-include("src/DFSupCalc.jl")
-include("src/DFTbCalc.jl")
-include("src/DFHamiCalc.jl")
-include("src/DFUtils.jl")
-include("src/DFPlotter.jl")
+using DFWannier
 pyplot()
 plot_font=font(15,"DejaVu Sans")
-#6.77s -1thread
-#1.8s  -8threads
-#1.9s  -4threads
-#2.6  -2threads
-#49s -2threads bloch
-#29s    -4threads bloch
-#25s    -8threads bloch
+
 pyplot(lab="",yguidefont=plot_font,ytickfont=plot_font,xtickfont=plot_font,legendfont=plot_font)
 T=Float64
 # x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.155854) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.318205) for i=1:4]...],Float64);
 
-x = create_TB_model("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(Float32[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(Float32[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...],Float32);
-dfbands = read_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/rest/bands.out",Float32)
-# dfbands = read_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/xsftest/GeTe_bands_notrot.out",T)
-dfbandssoc = read_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",T);
-# dfbandsnsoc = read_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/bands.out",T)
+x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+# dfbands = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/rest/bands.out",T)
+dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/xsftest/GeTe_bands_notrot.out",T)
+# dfbandssoc = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",T);
+dfbandsnsoc = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/bands.out",T)
 # potential=read_potential_file("/home/ponet/Documents/PhD/GeTe/NSOC/p_1.0/density.out")
-using ProfileView,Profile
-using BenchmarkTools
-@profile tbbandssoc = calculate_eig_cm_angmom_SOC(x,90:0.2:110);
-@profile tbbandssoc =  calculate_eig_cm_angmom_SOC(x);
-@time tbbandssoc =  calculate_eig_cm_angmom_SOC(x);
-tbbandssocf,tmp=calculate_eig_SOC(x)
+tbbandssocf=calculate_eig_soc(x)
 tbbandsf = calculate_eig_angmom(x)
 tbbands=calculate_eig_cm_angmom(x,90:0.2:110);
+tbbandssoc = calculate_eig_cm_angmom_soc(x,90:0.2:110);
 #----- paper plots
 # two small and 2 big
 plot(plot([tbbandssoc[9:10]...,tbbands[5]],:cm_z,label=["SOC" "SOC" "No SOC"],leg=false,xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:eigvals,fermi=9.2879,label=["SOC" "SOC" "No SOC"],xticks=([-0.05,0.0,0.05],["","",""]),yguide=L"E-E_f"*" (eV)"), plot(plot([tbbandssoc[9:10]...,tbbands[5]],:angmom2_x,label = ["SOC" "SOC" "No SOC"],leg=false,title="OAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:angmom2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),xguide=L"|$\mathbf{k}_r$|",title=""),layout=(2,1)), plot(plot([tbbandssoc[9:10]...,tbbands[5]],:spin2_x,fermi=9.2879,leg=false,title="SAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:spin2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),title="",xguide=L"|$\mathbf{k}_r$|"),layout=(2,1)),size=(1200,1200),guidefont=font(20,"DejaVu Sans"),titlefont=font(20,"DejaVu Sans"))
