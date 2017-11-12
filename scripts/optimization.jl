@@ -16,7 +16,7 @@ function optimize_l()
   x = WannierModel{T}("/home/ponet/Documents/PhD/BiTeI/NSOC/","/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",atoms);
   
   dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/SOC/2BiTeI_bands.out",T)[21:44]
-    
+
   lambda1_s = -0.462138
   lambda2_s = 0.355636
   lambda3_s = -0.768408
