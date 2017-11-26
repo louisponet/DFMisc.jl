@@ -8,7 +8,41 @@ pyplot(lab="",yguidefont=plot_font,ytickfont=plot_font,xtickfont=plot_font,legen
 T=Float64
 # x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.155854) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.318205) for i=1:4]...],Float64);
 
-x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+# x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+x = WannierModel{T}("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+calculate_angmom(x.wfcs[6],x.wfcs[8])
+points = [WfcPoint3D(-p.w,p.p) for p in x.wfcs[7].points]
+x.wfcs[7] = Wfc3D(points,x.wfcs[7].cell,x.wfcs[7].atom)
+x.wfcs[1].cell
+kz = 0.6049734
+ky_max = 1.0
+kx_max = 1.0
+kx_max = 1.184212/10
+ky_max = 1.0255575/10
+
+recip = [1.184212  0.000000  0.403316;-0.592106  1.025558  0.403316;-0.592106 -1.025558  0.403316]
+kp_cart = [[kx,ky,kz] for kx=linspace(-kx_max,kx_max,30),ky=linspace(-ky_max,ky_max,30)]
+kp_rec = [inv(recip')*kc for kc in kp_cart]
+k_input = reshape(kp_rec,(length(kp_rec),))
+k_plot = reshape(kp_cart,(length(kp_cart)))
+tbbands=calculate_eig_cm_angmom(x,k_input);
+# tbbandssoc=calculate_eig_cm_angmom_soc(x,k_input);
+
+kxs = [k[1] for k in k_plot]
+kys = [k[2] for k in k_plot]
+# kzs = [k[3] for k in k_input]
+u = Float64[]
+v = Float64[]
+# w = Float[]
+for (i,spinx) in enumerate(tbbands[3].angmoms)
+  lx,ly,lz = Array(spinx[2])
+  push!(u,lx/50)
+  push!(v,ly/50)
+end
+
+quiver(kxs,kys,quiver=(u,v))
+plot(tbbandssoc[6],:angmom2_x)
+test_points = [[ka,kb,kc] for (ka,kb,kc) in zip(linspace(0.5,0.25,201), linspace(1.0,1.0,201),linspace(0.0,0.25,201))]
 # dfbands = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/rest/bands.out",T)
 dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/xsftest/GeTe_bands_notrot.out",T)
 # dfbandssoc = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",T);
@@ -17,7 +51,10 @@ dfbandsnsoc = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/bands.out"
 tbbandssocf=calculate_eig_soc(x)
 tbbandsf = calculate_eig_angmom(x)
 tbbands=calculate_eig_cm_angmom(x,90:0.2:110);
+tbbands=calculate_eig_cm_angmom(x,k_input);
 tbbandssoc = calculate_eig_cm_angmom_soc(x,90:0.2:110);
+tbbandssoc = calculate_eig_cm_angmom_soc(x,k_input);
+plot(plot(tbbandssoc[9],:angmom2_x),plot(tbbands[5],:angmom2_x),plot(tbbandssoc[9],:angmom2_y),plot(tbbands[5],:angmom2_y))
 #----- paper plots
 # two small and 2 big
 plot(plot([tbbandssoc[9:10]...,tbbands[5]],:cm_z,label=["SOC" "SOC" "No SOC"],leg=false,xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:eigvals,fermi=9.2879,label=["SOC" "SOC" "No SOC"],xticks=([-0.05,0.0,0.05],["","",""]),yguide=L"E-E_f"*" (eV)"), plot(plot([tbbandssoc[9:10]...,tbbands[5]],:angmom2_x,label = ["SOC" "SOC" "No SOC"],leg=false,title="OAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:angmom2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),xguide=L"|$\mathbf{k}_r$|",title=""),layout=(2,1)), plot(plot([tbbandssoc[9:10]...,tbbands[5]],:spin2_x,fermi=9.2879,leg=false,title="SAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:spin2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),title="",xguide=L"|$\mathbf{k}_r$|"),layout=(2,1)),size=(1200,1200),guidefont=font(20,"DejaVu Sans"),titlefont=font(20,"DejaVu Sans"))

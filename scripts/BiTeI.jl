@@ -8,11 +8,11 @@ cell_param = 4.3392*T[ 0.8424444 -0.4863855 -3.7e-8;-1.5e-8 0.972771 6.0e-9;-5.7
 atom_pos   = [cell_param*[1/3 ,2/3, 0.3194],cell_param*[2/3,1/3,0.7363],cell_param*[0.0,0.0,0.0]]
 # atoms = [[PhysAtom(Point3D(atom_pos[1]),0.210752) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),0.296619) for i=1:4];[PhysAtom(Point3D(atom_pos[3]), -0.770879) for i=1:4]]
 atoms = [[PhysAtom(Point3D(atom_pos[1]),-0.0462138) for i=1:4];[PhysAtom(Point3D(atom_pos[2]),0.355636) for i=1:4];[PhysAtom(Point3D(atom_pos[3]), -0.768408) for i=1:4]]
-# x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/BiTeI/NSOC/","/Users/ponet/Documents/Fysica/PhD/BiTeI/NSOC/2BiTeI_bands.out",[[PhysAtom(Point3D(atom_pos[1]),1.0) for i=1:3];[PhysAtom(Point3D(atom_pos[2]),0.0) for i=1:3];[PhysAtom(Point3D(atom_pos[3]),0.8) for i=1:3]],Float64);
-x = WannierModel{T}("/home/ponet/Documents/PhD/BiTeI/NSOC/","/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",atoms);
+# x = WannierModel{T}("/home/ponet/Documents/PhD/BiTeI/NSOC/","/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",atoms);
+x = WannierModel{T}("/Users/ponet/Documents/Fysica/PhD/BiTeI/NSOC/","/Users/ponet/Documents/Fysica/PhD/BiTeI/NSOC/2BiTeI_bands.out",atoms);
 
 
-tbbands_soc_tot = calculate_eig_soc_bloch(x)
+tbbands_soc_tot = calculate_eig_soc(x)
 df_bands_soc = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/SOC/2BiTeI_bands.out",T)
 plot(df_bands_soc,tbbands_soc_tot,ylim=[5,12])
 
@@ -23,7 +23,7 @@ end
 tbbands_tot = calculate_eig_cm(x);
 df_bands = read_qe_bands_file("/home/ponet/Documents/PhD/BiTeI/NSOC/2BiTeI_bands.out",T)
 tbbands    = calculate_eig_cm_angmom(x,90:0.2:110);
-tbbandssoc = calculate_eig_cm_angmom_soc(x);
+tbbandssoc = calculate_eig_cm_angmom_soc(x,test_poitns);
 tbbandssoc = calculate_eig_cm_angmom_soc(x,90:0.2:110);
 
 plot(tbbandssoc)
