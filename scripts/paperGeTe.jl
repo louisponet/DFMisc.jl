@@ -5,48 +5,63 @@ pyplot()
 plot_font=font(15,"DejaVu Sans")
 
 pyplot(lab="",yguidefont=plot_font,ytickfont=plot_font,xtickfont=plot_font,legendfont=plot_font)
-T=Float64
+T=Float32
 # x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.155854) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.318205) for i=1:4]...],Float64);
 
-# x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
-x = WannierModel{T}("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/test3/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+# x = WannierModel{T}("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
+calculate_angmom(x.wfcs[6],x.wfcs[7])
 calculate_angmom(x.wfcs[6],x.wfcs[8])
-points = [WfcPoint3D(-p.w,p.p) for p in x.wfcs[7].points]
-x.wfcs[7] = Wfc3D(points,x.wfcs[7].cell,x.wfcs[7].atom)
+
+# points = [WfcPoint3D(-p.w,p.p) for p in x.wfcs[7].points]
+# x.wfcs[7] = Wfc3D(points,x.wfcs[7].cell,x.wfcs[7].atom)
 x.wfcs[1].cell
+recip = T[1.184212  0.000000  0.403316;-0.592106  1.025558  0.403316;-0.592106 -1.025558  0.403316]
+kz = 0.
 kz = 0.6049734
 ky_max = 1.0
 kx_max = 1.0
-kx_max = 1.184212/10
-ky_max = 1.0255575/10
-
-recip = [1.184212  0.000000  0.403316;-0.592106  1.025558  0.403316;-0.592106 -1.025558  0.403316]
-kp_cart = [[kx,ky,kz] for kx=linspace(-kx_max,kx_max,30),ky=linspace(-ky_max,ky_max,30)]
+kx_min,ky_min,kz_min = recip'*x.k_points[90]
+kx_max,ky_max,kz_max = recip'*x.k_points[110]
+kx_max = 1.184212/1
+ky_max = 1.0255575/1
+# kx_max = 0.0399672
+# ky_max = ky_min
+kp_cart = [T[kx,ky,kz] for kx=linspace(-ky_max,ky_max,30),ky=linspace(-ky_max,ky_max,30)]
 kp_rec = [inv(recip')*kc for kc in kp_cart]
 k_input = reshape(kp_rec,(length(kp_rec),))
 k_plot = reshape(kp_cart,(length(kp_cart)))
 tbbands=calculate_eig_cm_angmom(x,k_input);
-# tbbandssoc=calculate_eig_cm_angmom_soc(x,k_input);
+tbbandssoc=calculate_eig_cm_angmom_soc(x,k_input);
 
+begin
 kxs = [k[1] for k in k_plot]
 kys = [k[2] for k in k_plot]
 # kzs = [k[3] for k in k_input]
 u = Float64[]
 v = Float64[]
+c = Float64[]
 # w = Float[]
-for (i,spinx) in enumerate(tbbands[3].angmoms)
-  lx,ly,lz = Array(spinx[2])
-  push!(u,lx/50)
-  push!(v,ly/50)
+for (i,(spin,angmom)) in enumerate(zip(tbbandssoc[10].spins,tbbandssoc[10].angmoms))
+  sx,sy,sz = Array(spin[2])
+  # sx,sy,sz = Array(spin[2])+Array(spin[1])
+  lx,ly,lz = Array(angmom[2])
+  # lx,ly,lz = Array(angmom[2])+Array(angmom[1])
+  push!(u,(lx)/120)
+  push!(v,(ly)/120)
+  push!(c,sz)
+end
+println(maximum(c))
+quiver(kxs,kys,quiver=(u,v),color=c)
 end
 
-quiver(kxs,kys,quiver=(u,v))
-plot(tbbandssoc[6],:angmom2_x)
+6nd
+2lot(tbbandssoc[6],:angmom2_x)
 test_points = [[ka,kb,kc] for (ka,kb,kc) in zip(linspace(0.5,0.25,201), linspace(1.0,1.0,201),linspace(0.0,0.25,201))]
 # dfbands = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/rest/bands.out",T)
-dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/xsftest/GeTe_bands_notrot.out",T)
+dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",T)
 # dfbandssoc = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",T);
-dfbandsnsoc = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/bands.out",T)
+dfbandsnsoc = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/rest/bands.out",T)
 # potential=read_potential_file("/home/ponet/Documents/PhD/GeTe/NSOC/p_1.0/density.out")
 tbbandssocf=calculate_eig_soc(x)
 tbbandsf = calculate_eig_angmom(x)
@@ -220,3 +235,7 @@ end
 total_angmom[1][4]
 
 plot(map(x->real(x[1]),total_angmom))
+
+
+GeTe = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC/test3")
+pull_outputs(GeTe,extras=["*.xsf","*r.dat"])
