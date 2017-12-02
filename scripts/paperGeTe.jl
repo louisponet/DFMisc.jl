@@ -5,7 +5,7 @@ pyplot()
 plot_font=font(15,"DejaVu Sans")
 
 pyplot(lab="",yguidefont=plot_font,ytickfont=plot_font,xtickfont=plot_font,legendfont=plot_font)
-T=Float64
+T=Float32
 # x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.155854) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.318205) for i=1:4]...],Float64);
 
 # x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
@@ -14,14 +14,18 @@ calculate_angmom(x.wfcs[6],x.wfcs[8])
 points = [WfcPoint3D(-p.w,p.p) for p in x.wfcs[8].points]
 x.wfcs[8] = Wfc3D(points,x.wfcs[8].cell,x.wfcs[8].atom)
 x.wfcs[1].cell
+recip = T[1.184212  0.000000  0.403316;-0.592106  1.025558  0.403316;-0.592106 -1.025558  0.403316]
+kz = 0.
 kz = 0.6049734
 ky_max = 1.0
 kx_max = 1.0
-kx_max = 1.184212/10
-ky_max = 1.0255575/10
-
-recip = [1.184212  0.000000  0.403316;-0.592106  1.025558  0.403316;-0.592106 -1.025558  0.403316]
-kp_cart = [[kx,ky,kz] for kx=linspace(-kx_max,kx_max,30),ky=linspace(-ky_max,ky_max,30)]
+kx_min,ky_min,kz_min = recip'*x.k_points[90]
+kx_max,ky_max,kz_max = recip'*x.k_points[110]
+kx_max = 1.184212/1
+ky_max = 1.0255575/1
+# kx_max = 0.0399672
+# ky_max = ky_min
+kp_cart = [T[kx,ky,kz] for kx=linspace(-ky_max,ky_max,30),ky=linspace(-ky_max,ky_max,30)]
 kp_rec = [inv(recip')*kc for kc in kp_cart]
 kp_rec = reshape(kp_rec,(900,1))
 k_input = reshape(kp_rec,900,1)
@@ -29,27 +33,34 @@ k_plot = reshape(kp_cart,(length(kp_cart)))
 tbbands=calculate_eig_cm_angmom(x,k_input);
 tbbandssoc=calculate_eig_cm_angmom_soc(x,k_input);
 
+begin
 kxs = [k[1] for k in k_plot]
 kys = [k[2] for k in k_plot]
 # kzs = [k[3] for k in k_input]
 u = Float64[]
 v = Float64[]
-c= Float64[]
+c = Float64[]
 # w = Float[]
-for (i,spinx) in enumerate(tbbandssoc[10].spins)
-  lx,ly,lz = Array(spinx[2])
-  push!(u,lx/50)
-  push!(v,ly/50)
-  push!(c,lz)
+for (i,(spin,angmom)) in enumerate(zip(tbbandssoc[10].spins,tbbandssoc[10].angmoms))
+  sx,sy,sz = Array(spin[2])
+  # sx,sy,sz = Array(spin[2])+Array(spin[1])
+  lx,ly,lz = Array(angmom[2])
+  # lx,ly,lz = Array(angmom[2])+Array(angmom[1])
+  push!(u,(lx)/120)
+  push!(v,(ly)/120)
+  push!(c,sz)
 end
 println(maximum(c))
 quiver(kxs,kys,quiver=(u,v),color=c)
-plot(tbbandssoc[6],:angmom2_x)
+end
+
+6nd
+2lot(tbbandssoc[6],:angmom2_x)
 test_points = [[ka,kb,kc] for (ka,kb,kc) in zip(linspace(0.5,0.25,201), linspace(1.0,1.0,201),linspace(0.0,0.25,201))]
-dfbands = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/rest/bands.out",T)
-# dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/xsftest/GeTe_bands_notrot.out",T)
-dfbandssoc = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",T);
-# dfbandsnsoc = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/bands.out",T)
+# dfbands = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/rest/bands.out",T)
+dfbands = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",T)
+# dfbandssoc = read_qe_bands_file("/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",T);
+dfbandsnsoc = read_qe_bands_file("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/rest/bands.out",T)
 # potential=read_potential_file("/home/ponet/Documents/PhD/GeTe/NSOC/p_1.0/density.out")
 tbbandssocf=calculate_eig_soc(x)
 tbbandsf = calculate_eig_angmom(x)
@@ -227,130 +238,5 @@ total_angmom[1][4]
 plot(map(x->real(x[1]),total_angmom))
 
 
-using Images, GeometryTypes, GLVisualize, Reactive, GLWindow, Colors
-using GLAbstraction, GLFW
-import GLAbstraction: singlepressed, imagespace
-import GLVisualize: moving_average
-
-if !isdefined(:runtests)
-    window = glscreen()
-end
-
-description = """
-Drawing lines and then adding symmetrie to them.
-"""
-
-window.color = RGBA(0f0, 0f0, 0f0, 1f0)
-
-const linebuffer = Signal(fill(Point2f0(NaN), 4))
-const middle = Point2f0(widths(window)) / 2
-const symmetries = 18
-const unsmoothed = copy(value(linebuffer))
-
-
-function angle_between(a, b)
-    a = normalize(a)
-    b = normalize(b)
-    atan2(cross(a, b), dot(a, b))
-end
-
-
-symmetry_lines = foldp(Point2f0[], linebuffer) do v0, lines
-    resize!(v0, symmetries * length(lines))
-    i = 1;
-    for fi = linspace(0, 2pi, symmetries)
-        for point in lines
-            diff = middle - point
-            radius = norm(diff)
-            _fi = (fi + angle_between(diff, Point2f0(0, 1))) % 2pi
-            v0[i] = radius * Point2f0(
-                sin(_fi + pi),
-                cos(_fi + pi)
-            ) + middle
-            i += 1
-        end
-    end
-    v0
-end
-
-const lineobj = visualize(
-    symmetry_lines, :lines,
-    color = RGBA(0.8f0, 0.8f0, 0.8f0, 1f0),
-    thickness = 1.5f0,
-    boundingbox = AABB{Float32}(value(window.area)) # boundingbox for center!
-)
-_view(lineobj, window, camera = :orthographic_pixel)
-
-@materialize mouseposition, mouse_buttons_pressed, mouseinside, buttons_pressed = window.inputs
-
-camera = window.cameras[:orthographic_pixel]
-const history = Point2f0[]
-s = map(mouseposition, mouse_buttons_pressed, init = nothing) do mp, mbp
-    l0 = value(linebuffer)
-    if singlepressed(mbp, GLFW.MOUSE_BUTTON_LEFT) && value(mouseinside) && isempty(value(buttons_pressed))
-        p = imagespace(mp, camera)
-        keep, p = moving_average(p, 1.5f0, history)
-        if keep
-            push!(linebuffer, push!(l0, p))
-        end
-    else
-        if !isnan(last(l0)) # only push one NaN to seperate
-            empty!(history) # reset
-            push!(linebuffer, push!(l0, Point2f0(NaN)))
-        end
-    end
-    nothing
-end
-# preserve signals, so that it doesn't get garbage collected.
-preserve(s)
-# we need to define init, because otherwise it will be initialised by calling
-# the function one time, which
-
-if !isdefined(:runtests)
-    renderloop(window)
-end
-
-using GLVisualize, GeometryTypes, GLAbstraction
-using Colors, Reactive, FileIO
-if !isdefined(:runtests)
-    window = glscreen()
-    timesignal = bounce(linspace(0f0, 1f0, 360))
-end
-
-description = """
-Showing off the flexibility of the particle system by animating
-all kind of atributes for an arbitrary mesh as the particle.
-"""
-
-cat    = GLNormalMesh(loadasset("cat.obj"))
-sphere = GLNormalMesh(Sphere{Float32}(Vec3f0(0), 1f0), 12)
-
-function scale_gen(v0, nv)
-    l = length(v0)
-    @inbounds for i=1:l
-        v0[i] = Vec3f0(1,1,sin((nv*l)/i))/2
-    end
-    v0
-end
-function color_gen(v0, t)
-    l = length(v0)
-    @inbounds for x=1:l
-        v0[x] = RGBA{N0f8}(x/l,(cos(t)+1)/2,(sin(x/l/3)+1)/2.,1.)
-    end
-    v0
-end
-
-t            = const_lift(x->x+0.1, timesignal)
-ps           = sphere.vertices
-scale_start  = Vec3f0[Vec3f0(1,1,rand()) for i=1:length(ps)]
-scale        = foldp(scale_gen, scale_start, t)
-colorstart   = color_gen(zeros(RGBA{N0f8}, length(ps)), value(t))
-color        = foldp(color_gen, colorstart, t)
-rotation     = sphere.normals
-cats = visualize((cat, ps), scale = scale, color = color, rotation = rotation)
-
-_view(cats, window)
-
-if !isdefined(:runtests)
-    renderloop(window)
-end
+GeTe = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC/test3")
+pull_outputs(GeTe,extras=["*.xsf","*r.dat"])
