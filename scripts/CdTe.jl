@@ -25,7 +25,16 @@ heatmap(read_qe_kpdos(outputs[3])[1])
 
 
 CdTe_soc = deepcopy(CdTe)
-atoms = Dict(:Te => [Point3D{Float32}(0.3333333,0.6666667,0.385000),Point3D{Float32}(0.6666667,.3333333,0.86500)],:Cd =>[Point3D{Float32}(0.3333333,0.6666667,0.0000000),Point3D{Float32}(0.6666667,0.3333333,0.5000000)])
+orig_atoms = Dict(:Te => [Point3D{Float32}(0.3333333,0.6666667,0.375000),Point3D{Float32}(0.6666667,.3333333,0.87500)],:Cd =>[Point3D{Float32}(0.3333333,0.6666667,0.0000000),Point3D{Float32}(0.6666667,0.3333333,0.5000000)])
+new_atoms = copy(orig_atoms)
+for (key,val) in orig_atoms
+    if key == :Te
+        println(val[1])
+        for i=1:length(val)
+
+        new_atoms[key][i] = val .+ Point3D{Float32}[0.03,0.03,0.03]
+    end
+end
 change_atoms!(CdTe_soc,atoms,pseudo_set=:pbesolrel,pseudo_fuzzy="paw")
 add_flags!(CdTe_soc,:system,:lspinorb=>true,:noncolin=>true)
 CdTe_soc.server_dir = "CdTe/SOC/"
@@ -34,4 +43,4 @@ change_flow!(CdTe_soc,[("scf",true),("bands",true)])
 submit_job(CdTe_soc)
 
 outputs = pull_outputs(CdTe_soc)
-plot(read_qe_bands_file(outputs[2]),fermi=read_fermi_from_qe_file(outputs[1]),ylims=[-5,5],legend=false)
+plot(read_qe_bands_file(outputs[2]),fermi=read_fermi_from_qe_file(ou7puts[1]),ylims=[-5,5],legend=false)
