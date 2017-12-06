@@ -248,3 +248,12 @@ print_flags(GeTe)
 pull_outputs(GeTe,extras=["*.xsf","*r.dat"])
 submit_job(GeTe)
 replace_header_word!(GeTe,"frontend","defpart")
+
+#pol calc
+
+te_ez = -3.65563
+volume = 360.3090*0.52917724900001^3
+ez_rel = te_ez/volume
+p_te = ez*((0.52325284+0.002252856)-0.5)*3*6.686168
+# = -0.03502832319972468
+

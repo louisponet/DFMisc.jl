@@ -1,18 +1,21 @@
 using DFControl
 
 # CdTe = create_job("CdTe",phd_dir*"CdTe/NSOC",default_inputs[:scf],default_inputs[:bands],server_dir = "CdTe/NSOC")
-cdte = load_server_job("CdTe/NSOC",phd_dir*"CdTe/NSOC")
-add_calculation!(cdte,deepcopy(get_input(cdte,"scf")))
+cdte = load_job(phd_dir*"CdTe/NSOC")
+add_calculation!(cdte,deepcopy(get_input(cdte,"scf")),filename="nscf1.in")
 cdte.calculations[end].filename = "nscf2.in"
-
-add_calculation!(cdte,deepcopy(get_input(cdte,"nscf2")),filename="nscf3.in")
+add_flags!(cdte,"nscf1.in",:control,:lberry=>true,:gdir=>1,:nppstr=>12)
+add_calculation!(cdte,deepcopy(get_input(cdte,"nscf1")),filename="nscf3.in")
+add_flag
 print_info(cdte)
-change_flags!(cdte,"nscf.in",:calculation => "'nscf'")
-change_flags!(cdte,"nscf3.in",:gdir => 3)
-change_data!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points, gen_k_grid(12,12,12,:nscf))
-change_flow!(cdte,"scf.in"=>true,"bands.in"=>false,"projwfc"=>false)
+change_flags!(cdte,"nscf1.in",:calculation => "'nscf'")
+change_flags!(cdte,"nscf3.in",:gdir => 1)
+add_flags!(cdte,"nscf3.in",:control,:nppstr => 6)
+change_data!(cdte,["nscf3.in"],:k_points, gen_k_grid(6,6,6,:nscf))
+print_flow(cdte)
+change_flow!(cdte,"nscf1.in"=>false,"nscf2.in"=>false,"projwfc"=>false)
 change_data_option!(cdte,"nscf",:k_points,:crystal)
-remove_flags!(cdte,:smearing)
+remove_flags!(cdte,"nscf3.in",:nppstr)
 change_flags!(cdte,:occupations=>"'fixed'",:degauss=>0.0f0)
 atoms = Dict(:Te => [Point3D{Float32}(0.3333333,0.6666667,0.40000),Point3D{Float32}(0.6666667,.3333333,0.87500)],:Cd =>[Point3D{Float32}(0.3333333,0.6666667,0.0000000),Point3D{Float32}(0.6666667,0.3333333,0.5000000)])
 change_atoms!(cdte,new_atoms,pseudo_set=:pbesol,pseudo_fuzzy="paw")
@@ -23,6 +26,7 @@ remove_flags!(CdTe,:nbnd)
 add_flags!(CdTe,:system,:A => 1.0f0)
 change_data_option!(CdTe,:cell_parameters,:alat)
 replace_header_word!(cdte,"frontend","defpart")
+cdte.server_dir = "CdTe/NSOC/"
 submit_job(cdte)
 
 outputs = pull_outputs(CdTe,extras=["*s_j0.5*"])
