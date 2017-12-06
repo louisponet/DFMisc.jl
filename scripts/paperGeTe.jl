@@ -240,7 +240,7 @@ plot(map(x->real(x[1]),total_angmom))
 
 GeTe = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC")
 remove_flags!(GeTe,:smearing)
-remove_flags!(GeTe,:nspin,Symbol("starting_magnetization(2)"))
+remove_flags!(GeTe,Symbol("starting_magnetization(1)"))
 change_flags!(GeTe,:occupations=>"'fixed'",:degauss => 0.0f0)
 print_flow(GeTe)
 change_flow!(GeTe,"scf.in"=>true)
@@ -256,4 +256,16 @@ volume = 360.3090*0.52917724900001^3
 ez_rel = te_ez/volume
 p_te = ez*((0.52325284+0.002252856)-0.5)*3*6.686168
 # = -0.03502832319972468
+
+add_calculation!(GeTe,deepcopy(get_input(GeTe,"GeTe_nscf.in")),filename="berry1.in")
+add_flags!(GeTe,"berry1.in",:control, :lberry => true, :gdir => 1 , :nppstr => 10)
+change_flags!(GeTe,"berry1.in",:gdir=>1)
+add_calculation!(GeTe,deepcopy(get_input(GeTe,"berry1.in")),filename="berry2.in")
+change_flags!(GeTe,"berry2.in",:gdir=>2)
+add_calculation!(GeTe,deepcopy(get_input(GeTe,"berry2.in")),filename="berry3.in")
+change_flags!(GeTe,"berry3.in",:gdir=>3)
+change_data_option!(GeTe,"berry3.in",:k_points,:automatic)
+change_flow!(GeTe,"scf"=>false)
+GeTe.name = "GeTe_NSOC"
+
 

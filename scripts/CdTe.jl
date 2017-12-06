@@ -1,16 +1,20 @@
 using DFControl
 
 # CdTe = create_job("CdTe",phd_dir*"CdTe/NSOC",default_inputs[:scf],default_inputs[:bands],server_dir = "CdTe/NSOC")
-cdte = load_job(phd_dir*"CdTe/NSOC")
+cdte = load_server_job("CdTe/NSOC",phd_dir*"CdTe/NSOC")
 add_calculation!(cdte,deepcopy(get_input(cdte,"scf")),filename="nscf1.in")
+change_data!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,[10,10,10,1,1,1])
+change_data_option!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,:automatic)
+print_flags(cdte,"nscf3")
+remove_flags!(cdte,Symbol("starting_magnetization(2)"))
 cdte.calculations[end].filename = "nscf2.in"
 add_flags!(cdte,"nscf1.in",:control,:lberry=>true,:gdir=>1,:nppstr=>12)
 add_calculation!(cdte,deepcopy(get_input(cdte,"nscf1")),filename="nscf3.in")
 add_flag
 print_info(cdte)
-change_flags!(cdte,"nscf1.in",:calculation => "'nscf'")
+change_flags!(cdte,:nppstr => 10)
 change_flags!(cdte,"nscf3.in",:gdir => 1)
-add_flags!(cdte,"nscf3.in",:control,:nppstr => 6)
+add_flags!(cdte,"nscf1.in",:control,:nppstr => 10)
 change_data!(cdte,["nscf3.in"],:k_points, gen_k_grid(6,6,6,:nscf))
 print_flow(cdte)
 change_flow!(cdte,"nscf1.in"=>false,"nscf2.in"=>false,"projwfc"=>false)
@@ -27,6 +31,7 @@ add_flags!(CdTe,:system,:A => 1.0f0)
 change_data_option!(CdTe,:cell_parameters,:alat)
 replace_header_word!(cdte,"frontend","defpart")
 cdte.server_dir = "CdTe/NSOC/"
+change_flow!(cdte,"nscf2.in"=>true)
 submit_job(cdte)
 
 outputs = pull_outputs(CdTe,extras=["*s_j0.5*"])
@@ -45,16 +50,18 @@ heatmap(read_qe_kpdos(outputs[3])[1])
 CdTe_soc = deepcopy(CdTe)
 orig_atoms = Dict(:Te => [Point3D{Float32}(0.3333333,0.6666667,0.375000),Point3D{Float32}(0.6666667,.3333333,0.87500)],:Cd =>[Point3D{Float32}(0.3333333,0.6666667,0.0000000),Point3D{Float32}(0.6666667,0.3333333,0.5000000)])
 new_atoms = copy(orig_atoms)
-for (key,val) in orig_atoms
+for x=0.1:0.1:0.9
+  for (key,val) in orig_atoms
     if key == :Te
-        println(val[1])
-        for i=1:length(val)
-
-        new_atoms[key][i] = val[i] .+ Point3D{Float32}(0.03,0.03,0.03)
-        end
+      for i=1:length(val)
+        new_atoms[key][i] = val[i] .+ Point3D{Float32}(x*0.06,x*0.06,x*0.06)
+      end
     end
+  end
+  change_atoms!(cdte,new_atoms,pseudo_set=:pbesol,pseudo_fuzzy="paw")
+  cdte.server_dir = "CdTe/NSOC/berry$x"
+  submit_job(cdte)
 end
-change_atoms!(CdTe_soc,atoms,pseudo_set=:pbesolrel,pseudo_fuzzy="paw")
 add_flags!(CdTe_soc,:system,:lspinorb=>true,:noncolin=>true)
 CdTe_soc.server_dir = "CdTe/SOC/"
 CdTe_soc.local_dir  = phd_dir*"CdTe/SOC/"
