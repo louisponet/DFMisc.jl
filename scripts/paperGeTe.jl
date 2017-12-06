@@ -238,5 +238,13 @@ total_angmom[1][4]
 plot(map(x->real(x[1]),total_angmom))
 
 
-GeTe = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC/test3")
+GeTe = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC")
+remove_flags!(GeTe,:smearing)
+remove_flags!(GeTe,:nspin,Symbol("starting_magnetization(2)"))
+change_flags!(GeTe,:occupations=>"'fixed'",:degauss => 0.0f0)
+print_flow(GeTe)
+change_flow!(GeTe,"scf.in"=>true)
+print_flags(GeTe)
 pull_outputs(GeTe,extras=["*.xsf","*r.dat"])
+submit_job(GeTe)
+replace_header_word!(GeTe,"frontend","defpart")
