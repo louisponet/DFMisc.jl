@@ -2,8 +2,10 @@ using DFControl
 
 # CdTe = create_job("CdTe",phd_dir*"CdTe/NSOC",default_inputs[:scf],default_inputs[:bands],server_dir = "CdTe/NSOC")
 cdte = load_server_job("CdTe/NSOC",phd_dir*"CdTe/NSOC")
+pull_outputs(cdte)
 add_calculation!(cdte,deepcopy(get_input(cdte,"scf")),filename="nscf1.in")
-change_data!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,[10,10,10,1,1,1])
+change_data!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,[6,6,6,1,1,1])
+add_flags!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:control,:nppstr=>6)
 change_data_option!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,:automatic)
 print_flags(cdte,"nscf3")
 remove_flags!(cdte,Symbol("starting_magnetization(2)"))
@@ -17,12 +19,14 @@ change_flags!(cdte,"nscf3.in",:gdir => 1)
 add_flags!(cdte,"nscf1.in",:control,:nppstr => 10)
 change_data!(cdte,["nscf3.in"],:k_points, gen_k_grid(6,6,6,:nscf))
 print_flow(cdte)
-change_flow!(cdte,"nscf1.in"=>false,"nscf2.in"=>false,"projwfc"=>false)
+cdte.server_dir = "CdTe/NSOC/"
+print_flow(cdte)
+change_flow!(cdte,"nscf1.in"=>true,"nscf2.in"=>true,"scf"=>true)
 change_data_option!(cdte,"nscf",:k_points,:crystal)
 remove_flags!(cdte,"nscf3.in",:nppstr)
 change_flags!(cdte,:occupations=>"'fixed'",:degauss=>0.0f0)
 atoms = Dict(:Te => [Point3D{Float32}(0.3333333,0.6666667,0.40000),Point3D{Float32}(0.6666667,.3333333,0.87500)],:Cd =>[Point3D{Float32}(0.3333333,0.6666667,0.0000000),Point3D{Float32}(0.6666667,0.3333333,0.5000000)])
-change_atoms!(cdte,new_atoms,pseudo_set=:pbesol,pseudo_fuzzy="paw")
+change_atoms!(cdte,atoms,pseudo_set=:pbesol,pseudo_fuzzy="paw")
 change_data!(CdTe,"bands",:k_points,[[0.5f0,0.5f0,0.0f0,100],[0.0f0,0.0f0,0.0f0,100f0],[0.5f0,0.0f0,0.0f0,1]])
 cell = Float32[0.8660254  -0.5000000   0.0000000;0.0000000   1.0000000   0.0000000;0.0000000   0.0000000   1.6367615]*Float32[4.5700000 0.0 0.0 ;0.0 4.5700000 0.0;0.0 0.0 7.4800000]
 change_cell_parameters!(CdTe,cell)
@@ -32,7 +36,9 @@ change_data_option!(CdTe,:cell_parameters,:alat)
 replace_header_word!(cdte,"frontend","defpart")
 cdte.server_dir = "CdTe/NSOC/"
 change_flow!(cdte,"nscf2.in"=>true)
+change_flags!(cdte,:ecutwfc=>35)
 submit_job(cdte)
+cdte.server_dir
 
 outputs = pull_outputs(CdTe,extras=["*s_j0.5*"])
 using  Plots
@@ -54,19 +60,41 @@ for x=0.1:0.1:0.9
   for (key,val) in orig_atoms
     if key == :Te
       for i=1:length(val)
-        new_atoms[key][i] = val[i] .+ Point3D{Float32}(x*0.06,x*0.06,x*0.06)
+        new_atoms[key][i] = val[i] .+ Point3D{Float32}(0.0,0.0,x*0.06)
       end
     end
   end
   change_atoms!(cdte,new_atoms,pseudo_set=:pbesol,pseudo_fuzzy="paw")
-  cdte.server_dir = "CdTe/NSOC/berry$x"
+  cdte.server_dir = "CdTe/NSOC/berryz$x/"
+  cdte.local_dir  = phd_dir*"CdTe/NSOC/berryz$x/"
   submit_job(cdte)
 end
-add_flags!(CdTe_soc,:system,:lspinorb=>true,:noncolin=>true)
+cdte.local_dir  = phd_dir*"CdTe/NSOC/"
+cdte.server_dir = "CdTe/NSOC/"
+outputs = pull_outputs(cdte)
+polarizations = Array{Tuple{Point3D{Float64},Float64},1}()
+for x=0.1:0.1:0.8
+  cdte.local_dir  = phd_dir*"CdTe/NSOC/berryz$x/"
+  cdte.server_dir = "CdTe/NSOC/berryz$x/"
+  files = pull_outputs(cdte)[end-2:end]
+  t     = Point3D{Float64}()
+  mod   = zero(Float64)
+  for f in files
+    t_,mod =read_qe_polarization(f,Float64)
+    t+=t_
+  end
+  push!(polarizations,(t,mod))
+end
+plot(getfield.(getindex.(polarizations,1),:x))
+add_flags!(CdTe_soc,:system,:lspinorb=>true,:noncolin=>tru
 CdTe_soc.server_dir = "CdTe/SOC/"
 CdTe_soc.local_dir  = phd_dir*"CdTe/SOC/"
 change_flow!(CdTe_soc,[("scf",true),("bands",true)])
 submit_job(CdTe_soc)
-
-outputs = pull_outputs(CdTe_soc)
-plot(read_qe_bands_file(outputs[2]),fermi=read_fermi_from_qe_file(ou7puts[1]),ylims=[-5,5],legend=false)
+cdte_soc = load_server_job("CdTe/SOC/",phd_dir*"CdTe/SOC/")
+print_data(cdte_soc,"bands")
+change_atoms!(cdte_soc,orig_atoms)
+outputs = pull_outputs(cdte_soc)
+plot(read_qe_bands_file(outputs[2]),fermi=read_fermi_from_qe_file(outputs[1]),ylims=[-0.2,0.2],legend=false)
+print_flow(cdte_soc)
+submit_job(cdte_soc)
