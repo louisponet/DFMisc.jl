@@ -2,8 +2,18 @@ using DFControl
 
 # CdTe = create_job("CdTe",phd_dir*"CdTe/NSOC",default_inputs[:scf],default_inputs[:bands],server_dir = "CdTe/NSOC")
 cdte = load_job(phd_dir*"CdTe/NSOC")
-pull_outputs(cdte)
-add_calculation!(cdte,deepcopy(get_input(cdte,"scf")),filename="nscf1.in")
+print_data(cdte)
+outputs = pull_outputs(cdte)
+out = read_qe_output(outputs[6])[:polarization]
+using Plots
+fermi = read_qe_output(outputs[1])[:fermi]
+plot(read_qe_output(outputs[2])[:bands],ylim=[0,5])
+size(read_qe_output(outputs[1])[:cell_parameters])
+change_atoms!(cdte,read_qe_output(outputs[1])[:atomic_positions])
+change_cell_parameters!(cdte,read_qe_output(outputs[1])[:cell_parameters])
+add_calculation!(cdte,deepcopy(get_input(cdte,"scf")),1,filename="vcrel.in")
+change_flow!(cdte,"vc"=>false)
+change_flags!(cdte,"vcrel.in",:calculation => "'vc-relax'")
 change_data!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,[6,6,6,1,1,1])
 add_flags!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:control,:nppstr=>6)
 change_data_option!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,:automatic)
@@ -89,12 +99,24 @@ plot(getfield.(getindex.(polarizations,1),:x))
 add_flags!(CdTe_soc,:system,:lspinorb=>true,:noncolin=>tru
 CdTe_soc.server_dir = "CdTe/SOC/"
 CdTe_soc.local_dir  = phd_dir*"CdTe/SOC/"
-change_flow!(CdTe_soc,[("scf",true),("bands",true)])
-submit_job(CdTe_soc)
+change_flow!(cdte_soc,"scf"=>false)
+submit_job(cdte_soc)
 cdte_soc = load_server_job("CdTe/SOC/",phd_dir*"CdTe/SOC/")
 print_data(cdte_soc,"bands")
-change_atoms!(cdte_soc,orig_atoms)
+change_atoms!(cdte,orig_atoms)
 outputs = pull_outputs(cdte_soc)
-plot(read_qe_bands_file(outputs[2]),fermi=read_fermi_from_qe_file(outputs[1]),ylims=[-0.2,0.2],legend=false)
+plot(read_qe_bands_file(outputs[1]),legend=false,ylims=[10,25])
+print_flow(cdte_soc)
+submit_job(cdte)
+
+vcrel_cell = Float32[3.550867828  -2.049403922  -0.000000346;0.000598100   4.099843784   0.000000349;-0.000000628   0.000001104  10.094658435]
+vcrel_atoms = Dict(:Te => [Point3D{Float32}(0.333293113,0.666706909,0.379372877),Point3D{Float32}(0.666706909,0.333293083,0.879374290)],:Cd =>[Point3D{Float32}(0.333291511,0.666708506,-0.004374027),Point3D{Float32}(0.666708468,0.333291502,0.495626861)])
+change_atoms!(cdte,vcrel_atoms)
+change_cell_parameters!(cdte,vcrel_cell)
+
+cdte_soc = load_server_job("CdTe/SOC",phd_dir*"CdTe/SOC")
+change_flags!(cdte_soc,:verbosity=>"'high'")
+change_atoms!(cdte_soc,read_qe_output(outputs[1])[:atomic_positions])
+change_cell_parameters!(cdte_soc,read_qe_output(outputs[1])[:cell_parameters])
 print_flow(cdte_soc)
 submit_job(cdte_soc)

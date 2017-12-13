@@ -7,7 +7,7 @@ end
 # if input[end] == input[1]
 #     sum+=parse(Int,input[end])
 # end
-println(sum)
+dfprintln(sum)
     
 input = readdlm("/Users/ponet/Downloads/input.txt",Int)
 i=1
@@ -18,4 +18,4 @@ while 0<i<=length(input)
     input[t] = input[t] >=3 ? input[t]-1:input[t]+1
     j+=1
 end
-println(j)
+dfprintln(j)
