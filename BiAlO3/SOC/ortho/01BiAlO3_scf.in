@@ -1,0 +1,54 @@
+&control
+   prefix = 'pwo'
+   verbosity = 'high'
+   calculation = 'scf'
+   outdir = './'
+   pseudo_dir = '/home/ponet/pseudos/pbesolrel/PSEUDOPOTENTIALS'
+   disk_io = 'low'
+   restart_mode = 'from_scratch'
+/
+
+&system
+   A = 5.37546
+   nat = 10
+   ecutwfc = 35
+   lspinorb = true
+   ecutrho = 280
+   ntyp = 3
+   nbnd = 60
+   noncolin = true
+   ibrav = 0
+/
+
+&electrons
+   mixing_beta = 0.3
+   conv_thr = 1.0e-7
+   mixing_mode = 'plain'
+   diagonalization = 'david'
+/
+
+CELL_PARAMETERS (alat)
+ 0.57735026 0.0 0.83052367
+ -0.28867513 0.5 0.83052367
+ -0.28867513 -0.5 0.83052367
+
+ATOMIC_SPECIES
+Al 26.9815   Al.rel-pbesol-n-kjpaw_psl.0.2.2.UPF
+Bi 208.9804   Bi.rel-pbesol-dn-kjpaw_psl.0.2.2.UPF
+O 15.9994   O.rel-pbesol-n-kjpaw_psl.0.1.UPF
+
+ATOMIC_POSITIONS (crystal)
+Al 0.2222 0.2222 0.2222
+Al 0.7222 0.7222 0.7222
+Bi 0.0 0.0 0.0
+Bi 0.5 0.5 0.5
+O 0.4907 0.4354 0.9482
+O 0.9354 0.9907 0.4482
+O 0.4482 0.9354 0.9907
+O 0.9907 0.4482 0.9354
+O 0.4354 0.9482 0.4907
+O 0.9482 0.4907 0.4354
+
+K_POINTS (automatic)
+ 10 10 10 1 1 1
+

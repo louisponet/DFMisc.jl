@@ -6,7 +6,7 @@ plot_font=font(15,"DejaVu Sans")
 
 pyplot(lab="",yguidefont=plot_font,ytickfont=plot_font,xtickfont=plot_font,legendfont=plot_font)
 T=Float32
-# x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.155854) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.318205) for i=1:4]...],Float64);
+# x = create_TB_model("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(0.0,0.0,-0.0239129,-0.155854) for i=1:4]...,[PhysAtom(0.0,0.0,5.5540692,0.318205) for i=1:4]...],Float64)
 
 # x = WannierModel{T}("/home/ponet/Documents/PhD/GeTe/NSOC/paperxsf/","/home/ponet/Documents/PhD/GeTe/SOC/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
 x = WannierModel{T}("/Users/ponet/Documents/Fysica/PhD/GeTe/colin/paperxsf/test1","/Users/ponet/Documents/Fysica/PhD/GeTe/fullrel/GeTe_bands.out",[[PhysAtom(T[0.0,0.0,-0.0239129,-0.155854]...) for i=1:4]...,[PhysAtom(T[0.0,0.0,5.5540692,0.318205]...) for i=1:4]...]);
@@ -69,7 +69,9 @@ tbbands=calculate_eig_cm_angmom(x,k_input);
 tbbandssoc = calculate_eig_cm_angmom_soc(x,90:0.2:110);
 tbbandssoc = calculate_eig_cm_angmom_soc(x);
 tbbandssoc = calculate_eig_cm_angmom_soc(x,k_input);
+pyplot()
 plot(plot(tbbandssoc[9],:angmom2_x),plot(tbbands[5],:angmom2_x),plot(tbbandssoc[9],:angmom2_y),plot(tbbands[5],:angmom2_y))
+plot(plot([[real(eig[6]) for eig in tbbands[4].eigvec] [real(eig[8]) for eig in tbbands[4].eigvec] [real(eig[7]) for eig in tbbands[4].eigvec]],title="real no soc"),plot([[imag(eig[6]) for eig in tbbands[4].eigvec] [imag(eig[8]) for eig in tbbands[4].eigvec] [imag(eig[7]) for eig in tbbands[4].eigvec]],title="imag no soc"),plot([[real(eig[6]) for eig in tbbandssoc[7].eigvec] [real(eig[8]) for eig in tbbandssoc[7].eigvec] [real(eig[7]) for eig in tbbandssoc[7].eigvec]],title="real soc"),plot([[imag(eig[6]) for eig in tbbandssoc[7].eigvec] [imag(eig[8]) for eig in tbbandssoc[7].eigvec] [imag(eig[7]) for eig in tbbandssoc[7].eigvec]],title="imag soc"),labels=["pz" "py" "pz"])
 #----- paper plots
 # two small and 2 big
 plot(plot([tbbandssoc[9:10]...,tbbands[5]],:cm_z,label=["SOC" "SOC" "No SOC"],leg=false,xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:eigvals,fermi=9.2879,label=["SOC" "SOC" "No SOC"],xticks=([-0.05,0.0,0.05],["","",""]),yguide=L"E-E_f"*" (eV)"), plot(plot([tbbandssoc[9:10]...,tbbands[5]],:angmom2_x,label = ["SOC" "SOC" "No SOC"],leg=false,title="OAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:angmom2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),xguide=L"|$\mathbf{k}_r$|",title=""),layout=(2,1)), plot(plot([tbbandssoc[9:10]...,tbbands[5]],:spin2_x,fermi=9.2879,leg=false,title="SAM around Te",xticks=([-0.05,0.0,0.05],["","",""])),plot([tbbandssoc[9:10]...,tbbands[5]],:spin2_y,fermi=9.2879,leg=false,xticks=([-0.05,0.0,0.05],[0.05,"Z",0.05]),title="",xguide=L"|$\mathbf{k}_r$|"),layout=(2,1)),size=(1200,1200),guidefont=font(20,"DejaVu Sans"),titlefont=font(20,"DejaVu Sans"))
@@ -238,13 +240,13 @@ total_angmom[1][4]
 plot(map(x->real(x[1]),total_angmom))
 
 
-GeTe = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC")
+gete = load_server_job("GeTe_2/nonrel",phd_dir*"GeTe/NSOC")
 remove_flags!(GeTe,:smearing)
 remove_flags!(GeTe,Symbol("starting_magnetization(1)"))
 change_flags!(GeTe,:occupations=>"'fixed'",:degauss => 0.0f0)
 print_flow(GeTe)
 change_flow!(GeTe,"scf.in"=>true)
-print_flags(GeTe)
+print_flags(gete,"wan")
 pull_outputs(GeTe,extras=["*.xsf","*r.dat"])
 submit_job(GeTe)
 replace_header_word!(GeTe,"frontend","defpart")

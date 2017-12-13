@@ -1,7 +1,7 @@
 using DFControl
 
 # CdTe = create_job("CdTe",phd_dir*"CdTe/NSOC",default_inputs[:scf],default_inputs[:bands],server_dir = "CdTe/NSOC")
-cdte = load_server_job("CdTe/NSOC",phd_dir*"CdTe/NSOC")
+cdte = load_job(phd_dir*"CdTe/NSOC")
 pull_outputs(cdte)
 add_calculation!(cdte,deepcopy(get_input(cdte,"scf")),filename="nscf1.in")
 change_data!(cdte,["nscf1.in","nscf2.in","nscf3.in"],:k_points,[6,6,6,1,1,1])

@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH -J BiAlO3_SOC 
+#!/bin/bash
+#!/bin/bash
+#!/bin/bash
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH --ntasks-per-node=24
+#SBATCH --time=24:00:00
+#SBATCH -p defpart
+module load open-mpi/gcc/1.10.2
+module load mkl/2016.1.056
+mpirun -np 24 ~/bin/pw.x  <01BiAlO3_scf.in> 01BiAlO3_scf.out 
+mpirun -np 24 ~/bin/pw.x  <02BiAlO3_bands.in> 02BiAlO3_bands.out 

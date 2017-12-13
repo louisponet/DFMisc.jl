@@ -21,12 +21,21 @@ change_flow!(HfO2,[("nscf",false)])
 
 using DFControl
 hfo2    = load_server_job("HfO2/NSOC/",phd_dir*"HfO2/NSOC")
+atoms = get_data(hfo2,"bands",:atomic_positions)
+new_atoms = Dict{Symbol,Array{Point3D{Float32},1}}(:O=>[atoms[:O1],atoms[:O2]],:Hf=>[atoms[:Hf]])
+atoms[:O] = [atoms[:O1]...,atoms[:O2]...]
+change_atoms!(hfo2,atoms,pseudo_set=:pbesol,pseudo_fuzzy="paw")
+pop!(atoms,:O2)
+print_flow(hfo2)
+default_pseudos[:Hf]
+atoms
+print_data(hfo2,:atomic_species)
 outputs = pull_outputs(hfo2)
 using Plots
-plot(read_qe_bands_file(outputs[2]),ylims=[-18,2])
-print_flags(hfo2,"scf")
+plot(read_qe_bands_file(outputs[2]),fermi=-1.1936,ylims=[-5,10])
+print_flags(hfo2)
 add_flags!(hfo2,:system,:nbnd=>40)
 print_data(hfo2,"scf")
 remove_flags!(hfo2,:occupations,:smearing,:degauss)
 submit_job(hfo2)
-hfo2.job_header
+hfo2.header
